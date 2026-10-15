@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Gamiphil.SOC.Core\Gamiphil.SOC.Core.csproj" />
+    <ProjectReference Include="..\Gamiphil.SOC.Data\Gamiphil.SOC.Data.csproj" />
   </ItemGroup>
 
 </Project>

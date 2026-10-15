@@ -1,4 +1,5 @@
 ﻿
+using System.Text.Json;
 using Gamiphil.SOC.Core.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,28 +19,54 @@ public sealed class SocDbContext(DbContextOptions<SocDbContext> options)
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<Endpoint>()
-            .HasKey(endpoint => endpoint.Id);
+        modelBuilder.Entity<Endpoint>(entity =>
+        {
+            entity.HasKey(endpoint => endpoint.Id);
 
-        modelBuilder.Entity<SecurityEvent>()
-            .HasKey(securityEvent => securityEvent.Id);
+            entity.Property(endpoint => endpoint.Hostname)
+                .HasMaxLength(255);
 
-        modelBuilder.Entity<SecurityEvent>()
-            .HasIndex(securityEvent => securityEvent.EndpointId);
+            entity.Property(endpoint => endpoint.OperatingSystem)
+                .HasMaxLength(100);
 
-        modelBuilder.Entity<SecurityIncident>()
-            .HasKey(incident => incident.Id);
+            entity.Property(endpoint => endpoint.IpAddress)
+                .HasMaxLength(45);
 
-        modelBuilder.Entity<Endpoint>()
-            .Property(endpoint => endpoint.Hostname)
-            .HasMaxLength(255);
+            entity.Property(endpoint => endpoint.AgentVersion)
+                .HasMaxLength(50);
+        });
 
-        modelBuilder.Entity<SecurityEvent>()
-            .Property(securityEvent => securityEvent.Description)
-            .HasMaxLength(4000);
+        modelBuilder.Entity<SecurityEvent>(entity =>
+        {
+            entity.HasKey(securityEvent => securityEvent.Id);
 
-        modelBuilder.Entity<SecurityIncident>()
-            .Property(incident => incident.Title)
-            .HasMaxLength(255);
+            entity.HasIndex(securityEvent => securityEvent.EndpointId);
+
+            entity.Property(securityEvent => securityEvent.EventType)
+                .HasMaxLength(100);
+
+            entity.Property(securityEvent => securityEvent.Description)
+                .HasMaxLength(4000);
+
+            entity.Property(securityEvent => securityEvent.Source)
+                .HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<SecurityIncident>(entity =>
+        {
+            entity.HasKey(incident => incident.Id);
+
+            entity.Property(incident => incident.Title)
+                .HasMaxLength(255);
+
+            entity.Property(incident => incident.AssignedTo)
+                .HasMaxLength(255);
+
+            entity.Property(incident => incident.RelatedEventIds)
+                .HasConversion(
+                    ids => JsonSerializer.Serialize(ids, (JsonSerializerOptions?)null),
+                    json => JsonSerializer.Deserialize<List<Guid>>(
+                        json, (JsonSerializerOptions?)null) ?? new List<Guid>());
+        });
     }
 }

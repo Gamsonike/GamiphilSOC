@@ -1,12 +1,51 @@
+
+using Gamiphil.SOC.Core.Interfaces;
+using Gamiphil.SOC.Data.Persistence;
+using Gamiphil.SOC.Data.Repositories;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+// Resolve the existing database from the repository root.
+// In development, ContentRootPath is the server project directory.
+var databasePath = Path.GetFullPath(
+    Path.Combine(
+        builder.Environment.ContentRootPath,
+        "..",
+        "Gamiphil.SOC.Data",
+        "gamiphil-soc.db"));
+
+if (!File.Exists(databasePath))
+{
+    throw new FileNotFoundException(
+        $"The existing SOC database was not found: {databasePath}");
+}
+
+var connectionString = builder.Configuration
+    .GetConnectionString("SocDatabase");
+
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "Connection string 'SocDatabase' is missing.");
+}
+
+// Use the confirmed database path rather than a working-directory-dependent path.
+var sqliteConnectionString =
+    new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder(connectionString)
+    {
+        DataSource = databasePath
+    }.ToString();
+
+builder.Services.AddDbContext<SocDbContext>(options =>
+    options.UseSqlite(sqliteConnectionString));
+
+builder.Services.AddScoped<IEndpointRepository, EndpointRepository>();
+
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -14,28 +53,26 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
+app.MapGet("/api/endpoints", async (
+    IEndpointRepository repository,
+    CancellationToken cancellationToken) =>
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
+    var endpoints = await repository.GetAllAsync(cancellationToken);
+    return Results.Ok(endpoints);
 })
-.WithName("GetWeatherForecast");
+.WithName("GetEndpoints");
+
+app.MapGet("/api/endpoints/{id:guid}", async (
+    Guid id,
+    IEndpointRepository repository,
+    CancellationToken cancellationToken) =>
+{
+    var endpoint = await repository.GetByIdAsync(id, cancellationToken);
+
+    return endpoint is null
+        ? Results.NotFound()
+        : Results.Ok(endpoint);
+})
+.WithName("GetEndpointById");
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
