@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="Gamiphil.SOC.Core/Gamiphil.SOC.Core.csproj" />
+  <Project Path="Gamiphil.SOC.Data/Gamiphil.SOC.Data.csproj" />
+  <Project Path="Gamiphil.SOC.Response/Gamiphil.SOC.Response.csproj" />
+  <Project Path="Gamiphil.SOC.Security/Gamiphil.SOC.Security.csproj" />
+  <Project Path="Gamiphil.SOC.Server/Gamiphil.SOC.Server.csproj" />
+  <Project Path="Gamiphil.SOC.UI/Gamiphil.SOC.UI.csproj" />
+</Solution>

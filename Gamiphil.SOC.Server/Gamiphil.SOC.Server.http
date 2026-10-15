@@ -1,0 +1,6 @@
+@Gamiphil.SOC.Server_HostAddress = http://localhost:5285
+
+GET {{Gamiphil.SOC.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
